@@ -1,11 +1,13 @@
 const path = require("path");
 const HtmlWebpackPlugin = require("html-webpack-plugin");
 const webpack = require("webpack");
+const MiniCssExtractPlugin = require("mini-css-extract-plugin");
+const isDev = process.env.NODE_ENV === "development"; // 是否是开发模式
 
 module.exports = {
   entry: path.join(__dirname, "../src/index.tsx"), // 人口文件
   output: {
-    filename: "static/js/[name].js", // 每个输出js的名称
+    filename: "static/js/[name].[chunkhash:8].js", // 每个输出js的名称
     path: path.join(__dirname, "../dist"),
     clean: true,
     publicPath: "/",
@@ -13,13 +15,29 @@ module.exports = {
   module: {
     rules: [
       {
+        include: [path.resolve(__dirname, "../src")], //只对项目src文件的ts,tsx进行loader解析
         test: /\.(ts|tsx)?$/,
-        use: "babel-loader",
+        use: ["thread-loader", "babel-loader"],
         exclude: /node_modules/,
       },
       {
-        test: /.(css|less)$/, // 匹配css文件
-        use: ["style-loader", "css-loader", "postcss-loader", "less-loader"],
+        test: /.css$/, //匹配所有的 css 文件
+        include: [path.resolve(__dirname, "../src")],
+        use: [
+          isDev ? "style-loader" : MiniCssExtractPlugin.loader, // 开发环境使用style-looader,打包模式抽离css
+          "css-loader",
+          "postcss-loader",
+        ],
+      },
+      {
+        test: /.less$/, //匹配所有的 less 文件
+        include: [path.resolve(__dirname, "../src")],
+        use: [
+          isDev ? "style-loader" : MiniCssExtractPlugin.loader, // 开发环境使用style-looader,打包模式抽离css
+          "css-loader",
+          "postcss-loader",
+          "less-loader",
+        ],
       },
       {
         test: /.(png|jpg|gif|jpeg|gif|svg)$/, // 匹配图片文件
@@ -30,7 +48,7 @@ module.exports = {
           },
         },
         generator: {
-          filename: "static/images/[name][ext]",
+          filename: "static/images/[name].[contenthash:8][ext]",
         },
       },
       {
@@ -42,7 +60,7 @@ module.exports = {
           },
         },
         generator: {
-          filename: "static/fonts/[name][ext]",
+          filename: "static/fonts/[name].[contenthash:8][ext]",
         },
       },
       {
@@ -54,13 +72,16 @@ module.exports = {
           },
         },
         generator: {
-          filename: "static/media/[name][ext]", // 文件输出目录和命名
+          filename: "static/media/[name].[contenthash:8][ext]", // 文件输出目录和命名
         },
       },
     ],
   },
   resolve: {
     extensions: [".js", ".tsx", ".ts"],
+    alias: {
+      "@": path.join(__dirname, "../src"),
+    },
   },
   plugins: [
     new HtmlWebpackPlugin({
